@@ -16,7 +16,7 @@ public class WinSetupFileQueue extends WinSetupAPIBase
     /**
      * The Windows handle (HSPFILEQ) of the opened file queue.
      */
-    private int /* HSPFILEQ */handle = INVALID_HANDLE_VALUE;
+    private long /* HSPFILEQ */handle = INVALID_HANDLE_VALUE;
 
     /**
      * Creates a new file queue which uses the default setup callback handler from the Windows Setup API.

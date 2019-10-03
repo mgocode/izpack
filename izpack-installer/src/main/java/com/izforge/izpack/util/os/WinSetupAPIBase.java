@@ -9,7 +9,7 @@ import java.io.IOException;
 public class WinSetupAPIBase implements NativeLibraryClient
 {
 
-    protected static final int INVALID_HANDLE_VALUE = -1;
+    protected static final long INVALID_HANDLE_VALUE = -1;
 
     // ----------------------------- Copy styles -------------------------------
 
@@ -85,14 +85,14 @@ public class WinSetupAPIBase implements NativeLibraryClient
     public static final int SP_FLAG_CABINETCONTINUATION = 0x0000800;
 
     /**
-     * Like NOOVERWRITE but no callback nofitication
+     * Like NOOVERWRITE but no callback notification
      *
      * @see #SP_COPY_NOOVERWRITE
      */
     public static final int SP_COPY_FORCE_NOOVERWRITE = 0x0001000;
 
     /**
-     * Like NEWER but no callback nofitication
+     * Like NEWER but no callback notification
      */
     public static final int SP_COPY_FORCE_NEWER = 0x0002000;
 
@@ -176,14 +176,14 @@ public class WinSetupAPIBase implements NativeLibraryClient
      *                use the Setup API's SetupDefaultCallbackHandler.
      * @return Handle to the new file queue
      */
-    protected native int /* HSPFILEQ */SetupOpenFileQueue(Object handler) throws IOException;
+    protected native long /* HSPFILEQ */SetupOpenFileQueue(Object handler) throws IOException;
 
     /**
      * Closes a file queue.
      *
      * @param queuehandle Handle to the file queue to close.
      */
-    protected native void SetupCloseFileQueue(int /* HSPFILEQ */queuehandle);
+    protected native void SetupCloseFileQueue(long /* HSPFILEQ */queuehandle);
 
     /**
      * Places an individual file copy operation on a setup file queue.
@@ -198,7 +198,7 @@ public class WinSetupAPIBase implements NativeLibraryClient
      * @param TargetFileName    (optional)
      * @param CopyStyle
      */
-    protected native void /* BOOL */SetupQueueCopy(int /* HSPFILEQ */queuehandle,
+    protected native void /* BOOL */SetupQueueCopy(long /* HSPFILEQ */queuehandle,
                                                    String /* PCTSTR */SourceRootPath, String /* PCTSTR */SourcePath,
                                                    String /* PCTSTR */SourceFileName, String /* PCTSTR */SourceDescription,
                                                    String /* PCTSTR */SourceTagFile, String /* PCTSTR */TargetDirectory,
@@ -215,7 +215,7 @@ public class WinSetupAPIBase implements NativeLibraryClient
      *                    file to be deleted. The function checks for and collapses duplicated path separators when it
      *                    combines <i>PathPart1</i> and <i>PathPart2</i>.
      */
-    protected native void /* BOOL */SetupQueueDelete(int /* HSPFILEQ */queuehandle,
+    protected native void /* BOOL */SetupQueueDelete(long /* HSPFILEQ */queuehandle,
                                                      String /* PCTSTR */PathPart1, String /* PCTSTR */PathPart2) throws IOException;
 
     /**
@@ -231,7 +231,7 @@ public class WinSetupAPIBase implements NativeLibraryClient
      *                       the file is renamed but remains in its current location.
      * @param TargetFileName String that specifies the new name for the source file.
      */
-    protected native void /* BOOL */SetupQueueRename(int /* HSPFILEQ */queuehandle,
+    protected native void /* BOOL */SetupQueueRename(long /* HSPFILEQ */queuehandle,
                                                      String /* PCTSTR */SourcePath, String /* PCTSTR */SourceFileName,
                                                      String /* PCTSTR */TargetPath, String /* PCTSTR */TargetFileName) throws IOException;
 
@@ -242,7 +242,7 @@ public class WinSetupAPIBase implements NativeLibraryClient
      * @return If the function succeeds, the return value is a nonzero value. If the function fails,
      *         the return value is zero.
      */
-    protected native boolean /* BOOL */SetupCommitFileQueue(int /* HSPFILEQ */queuehandle)
+    protected native boolean /* BOOL */SetupCommitFileQueue(long /* HSPFILEQ */queuehandle)
             throws IOException;
 
     /**
@@ -255,6 +255,6 @@ public class WinSetupAPIBase implements NativeLibraryClient
      *                    previously described. Use ScanOnly to determine if shutdown is necessary separately from
      *                    actually initiating a shutdown.
      */
-    protected native int /* INT */SetupPromptReboot(int /* HSPFILEQ */queuehandle,
+    protected native int /* INT */SetupPromptReboot(long /* HSPFILEQ */queuehandle,
                                                     boolean /* BOOL */scanonly) throws IOException;
 }
