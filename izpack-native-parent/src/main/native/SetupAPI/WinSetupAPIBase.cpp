@@ -183,7 +183,7 @@ UINT WINAPI MyQueueCallback (
 
 // ------------------- Implementation of native functions --------------------
 
-JNIEXPORT jint JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_SetupOpenFileQueue
+JNIEXPORT jlong JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_SetupOpenFileQueue
 (JNIEnv *env, jobject out, jobject msghandler)
 {
   HSPFILEQ FileQueue;
@@ -209,16 +209,16 @@ JNIEXPORT jint JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_SetupOpen
   }
 
 #ifdef DEBUG
-  printf("(C) Opened file queue (%x).\n", FileQueue);
+  printf("(C) Opened file queue (%p).\n", FileQueue);
 #endif
-  return (jint)FileQueue;
+  return (jlong)FileQueue;
 };
 
 JNIEXPORT void JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_SetupCloseFileQueue
-(JNIEnv *env, jobject out, jint queuehandle)
+(JNIEnv *env, jobject out, jlong queuehandle)
 {
 #ifdef DEBUG
-  printf("(C) Closing file queue (%x)...\n", queuehandle);
+  printf("(C) Closing file queue (%p)...\n", queuehandle);
 #endif
   SetupCloseFileQueue((HSPFILEQ)queuehandle);
 
@@ -229,7 +229,7 @@ JNIEXPORT void JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_SetupClos
 };
 
 JNIEXPORT void JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_SetupQueueCopy
-(JNIEnv *env, jobject out, jint queuehandle,
+(JNIEnv *env, jobject out, jlong queuehandle,
     jstring sourcerootpath, jstring sourcepath, jstring sourcefilename,
     jstring sourcedescription, jstring sourcetagfile,
     jstring targetdirectory, jstring targetfilename, jint copystyle)
@@ -271,7 +271,7 @@ JNIEXPORT void JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_SetupQueu
 };
 
 JNIEXPORT void JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_SetupQueueDelete
-(JNIEnv *env, jobject out, jint queuehandle, jstring pathpart1, jstring pathpart2)
+(JNIEnv *env, jobject out, jlong queuehandle, jstring pathpart1, jstring pathpart2)
 {
   BOOL result;
 
@@ -295,7 +295,7 @@ JNIEXPORT void JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_SetupQueu
 };
 
 JNIEXPORT void JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_SetupQueueRename
-(JNIEnv *env, jobject out, jint queuehandle,
+(JNIEnv *env, jobject out, jlong queuehandle,
     jstring sourcepath, jstring sourcefilename,
     jstring targetpath, jstring targetfilename)
 {
@@ -327,7 +327,7 @@ JNIEXPORT void JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_SetupQueu
 };
 
 JNIEXPORT jboolean JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_SetupCommitFileQueue
-(JNIEnv *env, jobject out, jint queuehandle)
+(JNIEnv *env, jobject out, jlong queuehandle)
 {
   PVOID lpCallbackContext;
   PSP_FILE_CALLBACK msghandler;
@@ -336,7 +336,7 @@ JNIEXPORT jboolean JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_Setup
   lpCallbackContext = SetupInitDefaultQueueCallback( NULL );
 
 #ifdef DEBUG
-  printf("(C) Comitting file queue (%x)...\n", queuehandle);
+  printf("(C) Comitting file queue (%p)...\n", queuehandle);
 #endif
 
   if (g_jobj!=NULL)
@@ -387,7 +387,7 @@ JNIEXPORT jboolean JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_Setup
 };
 
 JNIEXPORT jint JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_SetupPromptReboot
-(JNIEnv *env, jobject out, jint queuehandle, jboolean scanonly)
+(JNIEnv *env, jobject out, jlong queuehandle, jboolean scanonly)
 {
   INT result;
 
