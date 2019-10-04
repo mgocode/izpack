@@ -41,144 +41,178 @@ void init_debug_console()
 }
 #endif
 
+// ----------------------------- Callback Helper functions ----------------------------
 
-// ----------------------------- Helper functions ----------------------------
+UINT MyQueueCallback_CopyError(PVOID pDefaultContext, UINT_PTR Param1, UINT_PTR Param2)
+{
+#ifdef DEBUG
+	printf("(C) SPFILENOTIFY_COPYERROR callback...\n");
+#endif
+	// Attach thread to JVM
+	JNIEnv* lpEnv;
+	g_jvm->AttachCurrentThread((void**)&lpEnv, NULL);
+	jclass cls = lpEnv->GetObjectClass(g_jobj);
 
-UINT WINAPI MyQueueCallback (
-    PVOID pDefaultContext,
-    UINT Notification,
-    UINT_PTR Param1,
-    UINT_PTR Param2)
+	jmethodID jmID = lpEnv->GetMethodID(cls, "handleCopyError", "(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)I");
+	jstring js1 = ((PFILEPATHS)Param1)->Source == NULL ? NULL : lpEnv->NewStringUTF(((PFILEPATHS)Param1)->Source);
+	jstring js2 = ((PFILEPATHS)Param1)->Target == NULL ? NULL : lpEnv->NewStringUTF(((PFILEPATHS)Param1)->Target);
+	jint win32err = ((PFILEPATHS)Param1)->Win32Error;
+	jstring js3 = lpEnv->NewStringUTF(FormatSystemErrorMessage(((PFILEPATHS)Param1)->Win32Error, "SetupQueueCopy"));
+	UINT ret = lpEnv->CallIntMethod(g_jobj, jmID, js1, js2, win32err, js3);
+	return ret;
+}
+
+UINT MyQueueCallback_DeleteError(PVOID pDefaultContext, UINT_PTR Param1, UINT_PTR Param2)
+{
+#ifdef DEBUG
+	printf("(C) SPFILENOTIFY_DELETEERROR callback...\n");
+#endif
+	// Attach thread to JVM
+	JNIEnv* lpEnv;
+	g_jvm->AttachCurrentThread((void**)&lpEnv, NULL);
+	jclass cls = lpEnv->GetObjectClass(g_jobj);
+
+	jmethodID jmID = lpEnv->GetMethodID(cls, "handleDeleteError", "(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)I");
+	jstring js1 = ((PFILEPATHS)Param1)->Target == NULL ? NULL : lpEnv->NewStringUTF(((PFILEPATHS)Param1)->Target);
+	jint win32err = ((PFILEPATHS)Param1)->Win32Error;
+	jstring js3 = lpEnv->NewStringUTF(FormatSystemErrorMessage(((PFILEPATHS)Param1)->Win32Error, "SetupQueueDelete"));
+	UINT ret = lpEnv->CallIntMethod(g_jobj, jmID, js1, win32err, js3);
+	return ret;
+}
+
+UINT MyQueueCallback_RenameError(PVOID pDefaultContext, UINT_PTR Param1, UINT_PTR Param2)
+{
+#ifdef DEBUG
+	printf("(C) SPFILENOTIFY_RENAMEERROR callback...\n");
+#endif
+	// Attach thread to JVM
+	JNIEnv* lpEnv;
+	g_jvm->AttachCurrentThread((void**)&lpEnv, NULL);
+	jclass cls = lpEnv->GetObjectClass(g_jobj);
+
+	jmethodID jmID = lpEnv->GetMethodID(cls, "handleRenameError", "(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)I");
+	jstring js1 = ((PFILEPATHS)Param1)->Source == NULL ? NULL : lpEnv->NewStringUTF(((PFILEPATHS)Param1)->Source);
+	jstring js2 = ((PFILEPATHS)Param1)->Target == NULL ? NULL : lpEnv->NewStringUTF(((PFILEPATHS)Param1)->Target);
+	jint win32err = ((PFILEPATHS)Param1)->Win32Error;
+	jstring js3 = lpEnv->NewStringUTF(FormatSystemErrorMessage(((PFILEPATHS)Param1)->Win32Error, "SetupQueueRename"));
+	UINT ret = lpEnv->CallIntMethod(g_jobj, jmID, js1, js2, win32err, js3);
+	return ret;
+}
+
+UINT MyQueueCallback_NeedMedia(PVOID pDefaultContext, UINT_PTR Param1, UINT_PTR Param2)
+{
+	JNIEnv* lpEnv;
+
+	jclass cls;
+	jmethodID jmID;
+	jstring js1, js2, js3, js4;
+	UINT ret;
+	INT lzRet = LZERROR_BADINHANDLE;
+
+	// Attach thread to JVM
+	g_jvm->AttachCurrentThread((void**)&lpEnv, NULL);
+
+	cls = lpEnv->GetObjectClass(g_jobj);
+
+	//case SPFILENOTIFY_NEEDMEDIA:
+	OFSTRUCT ReOpenBuf;
+
+#ifdef DEBUG
+	printf("(C) SPFILENOTIFY_NEEDMEDIA callback...\n");
+#endif
+	Param2 = (UINT)LocalAlloc(LMEM_ZEROINIT,
+		(strlen(((PSOURCE_MEDIA)Param1)->SourcePath)
+			+ strlen(((PSOURCE_MEDIA)Param1)->SourceFile)
+			+ 2) * sizeof(TCHAR));
+
+	lstrcpy((LPTSTR)Param2, ((PSOURCE_MEDIA)Param1)->SourcePath);
+	lstrcat((LPTSTR)Param2, "\\");
+	lstrcat((LPTSTR)Param2, ((PSOURCE_MEDIA)Param1)->SourceFile);
+
+#ifdef DEBUG
+	printf("(C) SPFILENOTIFY_NEEDMEDIA: Checking for source file %s\n", (LPTSTR)Param2);
+#endif
+
+	lzRet = LZOpenFile(
+		(LPTSTR)Param2,
+		&ReOpenBuf,
+		OF_EXIST | OF_READ
+	);
+
+	if ((lzRet != LZERROR_BADINHANDLE) && (lzRet != LZERROR_GLOBALLOC))
+	{
+#ifdef DEBUG
+		printf("(C) SPFILENOTIFY_NEEDMEDIA: Found %s\n", Param2);
+#endif
+		//ret = FILEOP_SKIP;
+		ret = SetupDefaultQueueCallback(pDefaultContext, SPFILENOTIFY_NEEDMEDIA, Param1, Param2);
+	}
+	else
+	{
+#ifdef DEBUG
+		ErrorPrint("LZOpenFile");
+#endif
+
+#ifdef DEBUG
+		printf("(C) SPFILENOTIFY_NEEDMEDIA: callback to Java (%s)...\n",
+			((PSOURCE_MEDIA)Param1)->SourceFile);
+#endif
+
+		jmID = lpEnv->GetMethodID(cls,
+			"handleNeedMedia",
+			"(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I");
+
+		js1 = ((PSOURCE_MEDIA)Param1)->Tagfile == NULL ? NULL : lpEnv->NewStringUTF(((PSOURCE_MEDIA)Param1)->Tagfile);
+		js2 = ((PSOURCE_MEDIA)Param1)->Description == NULL ? NULL : lpEnv->NewStringUTF(((PSOURCE_MEDIA)Param1)->Description);
+		js3 = ((PSOURCE_MEDIA)Param1)->SourcePath == NULL ? NULL : lpEnv->NewStringUTF(((PSOURCE_MEDIA)Param1)->SourcePath);
+		js4 = ((PSOURCE_MEDIA)Param1)->SourceFile == NULL ? NULL : lpEnv->NewStringUTF(((PSOURCE_MEDIA)Param1)->SourceFile);
+
+		ret = lpEnv->CallIntMethod(g_jobj, jmID, js1, js2, js3, js4);
+	}
+
+	LocalFree((LPVOID)Param2);
+	return ret;
+}
+
+// ----------------------------- Main callback function ----------------------------
+
+UINT WINAPI MyQueueCallback(
+	PVOID pDefaultContext,
+	UINT Notification,
+	UINT_PTR Param1,
+	UINT_PTR Param2)
 {
 #ifdef DEBUG
 	printf("(C) MyQueueCallback...\n");
 #endif
 
-  JNIEnv *lpEnv;
+	UINT ret;
 
-  jclass cls;
-  jmethodID jmID;
-  jstring js1, js2, js3, js4;
-  jint win32err;
-  UINT ret;
-  INT lzRet = LZERROR_BADINHANDLE;
-
-  // Attach thread to JVM
-  g_jvm->AttachCurrentThread((void**)&lpEnv, NULL);
-
-  cls = lpEnv->GetObjectClass(g_jobj);
-
-  switch (Notification)
-  {
-    case SPFILENOTIFY_COPYERROR :
+	switch (Notification)
+	{
+	case SPFILENOTIFY_COPYERROR:
+		ret = MyQueueCallback_CopyError(pDefaultContext, Param1, Param2);
+		break;
+	case SPFILENOTIFY_DELETEERROR:
+		ret = MyQueueCallback_DeleteError(pDefaultContext, Param1, Param2);
+		break;
+	case SPFILENOTIFY_RENAMEERROR:
+		ret = MyQueueCallback_RenameError(pDefaultContext, Param1, Param2);
+		break;
+	case SPFILENOTIFY_NEEDMEDIA:
+		ret = MyQueueCallback_NeedMedia(pDefaultContext, Param1, Param2);
+		break;
+	default:
+		// Pass all other notifications through without modification
 #ifdef DEBUG
-    printf("(C) SPFILENOTIFY_COPYERROR callback...\n");
+		printf("(C) Unhandled notification %x, forwarding to standard handler\n", Notification);
 #endif
-    jmID = lpEnv->GetMethodID(cls,
-        "handleCopyError",
-        "(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)I");
-    js1 = ((PFILEPATHS)Param1)->Source==NULL?NULL:lpEnv->NewStringUTF(((PFILEPATHS)Param1)->Source);
-    js2 = ((PFILEPATHS)Param1)->Target==NULL?NULL:lpEnv->NewStringUTF(((PFILEPATHS)Param1)->Target);
-    win32err = ((PFILEPATHS)Param1)->Win32Error;
-    js3 = lpEnv->NewStringUTF(FormatSystemErrorMessage(((PFILEPATHS)Param1)->Win32Error, "SetupQueueCopy"));
-    ret = lpEnv->CallIntMethod(g_jobj, jmID, js1, js2, win32err, js3);
-    break;
-    case SPFILENOTIFY_DELETEERROR :
+		ret = SetupDefaultQueueCallback(pDefaultContext, Notification, Param1, Param2);
+	}
 #ifdef DEBUG
-    printf("(C) SPFILENOTIFY_DELETEERROR callback...\n");
+	printf("(C) Callback handler returns code %d\n", ret);
 #endif
-    jmID = lpEnv->GetMethodID(cls,
-        "handleDeleteError",
-        "(Ljava/lang/String;ILjava/lang/String;)I");
-    js1 = ((PFILEPATHS)Param1)->Target==NULL?NULL:lpEnv->NewStringUTF(((PFILEPATHS)Param1)->Target);
-    win32err = ((PFILEPATHS)Param1)->Win32Error;
-    js3 = lpEnv->NewStringUTF(FormatSystemErrorMessage(((PFILEPATHS)Param1)->Win32Error, "SetupQueueDelete"));
-    ret = lpEnv->CallIntMethod(g_jobj, jmID, js1, win32err, js3);
-    break;
-    case SPFILENOTIFY_RENAMEERROR :
-#ifdef DEBUG
-    printf("(C) SPFILENOTIFY_RENAMEERROR callback...\n");
-#endif
-    jmID = lpEnv->GetMethodID(cls,
-        "handleRenameError",
-        "(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)I");
-    js1 = ((PFILEPATHS)Param1)->Source==NULL?NULL:lpEnv->NewStringUTF(((PFILEPATHS)Param1)->Source);
-    js2 = ((PFILEPATHS)Param1)->Target==NULL?NULL:lpEnv->NewStringUTF(((PFILEPATHS)Param1)->Target);
-    win32err = ((PFILEPATHS)Param1)->Win32Error;
-    js3 = lpEnv->NewStringUTF(FormatSystemErrorMessage(((PFILEPATHS)Param1)->Win32Error, "SetupQueueRename"));
-    ret = lpEnv->CallIntMethod(g_jobj, jmID, js1, js2, win32err, js3);
-    break;
-    case SPFILENOTIFY_NEEDMEDIA :
-    OFSTRUCT ReOpenBuf;
-
-#ifdef DEBUG
-    printf("(C) SPFILENOTIFY_NEEDMEDIA callback...\n");
-#endif
-    Param2 = (UINT)LocalAlloc(LMEM_ZEROINIT,
-        (strlen(((PSOURCE_MEDIA)Param1)->SourcePath)
-            +strlen(((PSOURCE_MEDIA)Param1)->SourceFile)
-            +2)*sizeof(TCHAR));
-
-    lstrcpy( (LPTSTR)Param2, ((PSOURCE_MEDIA)Param1)->SourcePath );
-    lstrcat( (LPTSTR)Param2, "\\" );
-    lstrcat( (LPTSTR)Param2, ((PSOURCE_MEDIA)Param1)->SourceFile );
-
-#ifdef DEBUG
-    printf("(C) SPFILENOTIFY_NEEDMEDIA: Checking for source file %s\n",
-        (LPTSTR)Param2);
-#endif
-
-    lzRet = LZOpenFile(
-        (LPTSTR)Param2,
-        &ReOpenBuf,
-        OF_EXIST | OF_READ
-    );
-
-    if ((lzRet != LZERROR_BADINHANDLE) && (lzRet != LZERROR_GLOBALLOC))
-    {
-#ifdef DEBUG
-      printf("(C) SPFILENOTIFY_NEEDMEDIA: Found %s\n", Param2);
-#endif
-      //ret = FILEOP_SKIP;
-      ret = SetupDefaultQueueCallback(pDefaultContext, Notification, Param1, Param2);
-    }
-    else
-    {
-#ifdef DEBUG
-      ErrorPrint("LZOpenFile");
-#endif
-
-#ifdef DEBUG
-      printf("(C) SPFILENOTIFY_NEEDMEDIA: callback to Java (%s)...\n",
-          ((PSOURCE_MEDIA)Param1)->SourceFile);
-#endif
-
-      jmID = lpEnv->GetMethodID(cls,
-          "handleNeedMedia",
-          "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I");
-
-      js1 = ((PSOURCE_MEDIA)Param1)->Tagfile==NULL?NULL:lpEnv->NewStringUTF(((PSOURCE_MEDIA)Param1)->Tagfile);
-      js2 = ((PSOURCE_MEDIA)Param1)->Description==NULL?NULL:lpEnv->NewStringUTF(((PSOURCE_MEDIA)Param1)->Description);
-      js3 = ((PSOURCE_MEDIA)Param1)->SourcePath==NULL?NULL:lpEnv->NewStringUTF(((PSOURCE_MEDIA)Param1)->SourcePath);
-      js4 = ((PSOURCE_MEDIA)Param1)->SourceFile==NULL?NULL:lpEnv->NewStringUTF(((PSOURCE_MEDIA)Param1)->SourceFile);
-
-      ret = lpEnv->CallIntMethod(g_jobj, jmID, js1, js2, js3, js4);
-    }
-
-    LocalFree((LPVOID)Param2);
-    break;
-    default :
-#ifdef DEBUG
-    printf("(C) Unhandled notification %x, forwarding to standard handler\n", Notification);
-#endif
-    // Pass all other notifications through without modification
-    ret = SetupDefaultQueueCallback(pDefaultContext, Notification, Param1, Param2);
-  }
-
-#ifdef DEBUG
-  printf("(C) Callback handler returns code %d\n", ret);
-#endif
-  return ret;
+	return ret;
 }
 
 // ------------------- Implementation of native functions --------------------
