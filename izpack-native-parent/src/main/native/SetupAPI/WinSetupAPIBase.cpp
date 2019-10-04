@@ -181,42 +181,6 @@ UINT WINAPI MyQueueCallbackJava (
   return ret;
 }
 
-UINT WINAPI MyQueueCallback (
-    PVOID pDefaultContext,
-    UINT Notification,
-    UINT Param1,
-    UINT Param2)
-{
-  switch (Notification)
-  {
-    case SPFILENOTIFY_COPYERROR :
-#ifdef DEBUG
-    printf("SPFILENOTIFY_COPYERROR: A copy error occured, aborting.\n");
-#endif
-    return FILEOP_ABORT;
-    case SPFILENOTIFY_DELETEERROR :
-    // Skip any file delete errors
-#ifdef DEBUG
-    printf("SPFILENOTIFY_DELETEERROR: A delete error occured, skipping file.\n");
-#endif
-    return FILEOP_SKIP;
-    case SPFILENOTIFY_RENAMEERROR :
-#ifdef DEBUG
-    printf("SPFILENOTIFY_RENAMEERROR: A rename error occured, aborting.\n");
-#endif
-    return FILEOP_ABORT;
-    case SPFILENOTIFY_NEEDMEDIA :
-#ifdef DEBUG
-    printf("SPFILENOTIFY_NEEDMEDIA: Error with the source file %s, aborting.\n",
-        ((PSOURCE_MEDIA)Param1)->SourceFile);
-#endif
-    return FILEOP_ABORT;
-    default :
-    // Pass all other notifications through without modification
-    return SetupDefaultQueueCallback(pDefaultContext, Notification, Param1, Param2);
-  }
-}
-
 // ------------------- Implementation of native functions --------------------
 
 JNIEXPORT jlong JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_SetupOpenFileQueue
@@ -396,28 +360,8 @@ JNIEXPORT jboolean JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_Setup
 #endif
     ThrowIOExceptionLastError(env, "SetupCommitFileQueue");
   }
-  /*
-  else
-  {
-  INT reboot = SetupPromptReboot( (HSPFILEQ)queuehandle, NULL, TRUE);
-  printf("(C) SetupPromptReboot returned %d\n", reboot);
-  if ((reboot & SPFILEQ_FILE_IN_USE) != 0) {
-  printf("(Java) At least one file was in use during the queue commit process and there are delayed file operations pending.");
-  //printf("(Java) Rebooting...");
-  //InitiateSystemShutdown(null, this.getClass().toString(), 30, true, true);
-  }
-  if ((reboot & SPFILEQ_REBOOT_RECOMMENDED) != 0) {
-  printf("(Java) The system should be rebooted.");
-  //printf("(Java) Rebooting...");
-  //InitiateSystemShutdown(null, this.getClass().toString(), 30, true, true);
-  }
-  if ((reboot & SPFILEQ_REBOOT_IN_PROGRESS) != 0)
-  printf("(Java) System shutdown is already in progress.");
-  }
-  */
 
   SetupTermDefaultQueueCallback( lpCallbackContext );
-
   return result;
 };
 
