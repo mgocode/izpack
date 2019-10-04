@@ -44,14 +44,14 @@ void init_debug_console()
 
 // ----------------------------- Helper functions ----------------------------
 
-UINT WINAPI MyQueueCallbackJava (
+UINT WINAPI MyQueueCallback (
     PVOID pDefaultContext,
     UINT Notification,
     UINT_PTR Param1,
     UINT_PTR Param2)
 {
 #ifdef DEBUG
-	printf("(C) MyQueueCallbackJava...\n");
+	printf("(C) MyQueueCallback...\n");
 #endif
 
   JNIEnv *lpEnv;
@@ -344,7 +344,7 @@ JNIEXPORT jboolean JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_Setup
   if (g_jobj!=NULL)
   {
     SetupDefaultQueueCallback(lpCallbackContext, 0, 0, 0);
-    msghandler = (PSP_FILE_CALLBACK)MyQueueCallbackJava;
+    msghandler = (PSP_FILE_CALLBACK)MyQueueCallback;
   }
   else
   {
