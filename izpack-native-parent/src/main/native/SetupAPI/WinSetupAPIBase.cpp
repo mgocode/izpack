@@ -33,10 +33,10 @@ void init_debug_console()
 #else
 		printf("_WIN64: not defined\n");
 #endif
-		printf("sizeof(size_t): %d\n", sizeof(size_t));
-		printf("sizeof(HSPFILEQ): %d\n", sizeof(HSPFILEQ));
-		printf("sizeof(jint): %d\n", sizeof(jint));
-		printf("sizeof(jlong): %d\n", sizeof(jlong));
+		printf("sizeof(size_t): %zu\n", sizeof(size_t));
+		printf("sizeof(HSPFILEQ): %zu\n", sizeof(HSPFILEQ));
+		printf("sizeof(jint): %zu\n", sizeof(jint));
+		printf("sizeof(jlong): %zu\n", sizeof(jlong));
 	}
 }
 #endif
@@ -254,13 +254,15 @@ JNIEXPORT jlong JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_SetupOpe
 JNIEXPORT void JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_SetupCloseFileQueue
 (JNIEnv *env, jobject out, jlong queuehandle)
 {
+	HSPFILEQ qhandle = (HSPFILEQ)queuehandle;
+
 #ifdef DEBUG
-  printf("(C) Closing file queue (%p)...\n", queuehandle);
+  printf("(C) Closing file queue (%p)...\n", qhandle);
 #endif
-  SetupCloseFileQueue((HSPFILEQ)queuehandle);
+  SetupCloseFileQueue(qhandle);
 
   if (g_jobj!=NULL)
-  env->DeleteGlobalRef(g_jobj);
+	env->DeleteGlobalRef(g_jobj);
 
   return;
 };
@@ -366,15 +368,14 @@ JNIEXPORT void JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_SetupQueu
 JNIEXPORT jboolean JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_SetupCommitFileQueue
 (JNIEnv *env, jobject out, jlong queuehandle)
 {
-  PVOID lpCallbackContext;
-  PSP_FILE_CALLBACK msghandler;
-  BOOL result;
-
-  lpCallbackContext = SetupInitDefaultQueueCallback( NULL );
+  PVOID lpCallbackContext = SetupInitDefaultQueueCallback(NULL);
+  HSPFILEQ qhandle = (HSPFILEQ) queuehandle;
 
 #ifdef DEBUG
-  printf("(C) Committing file queue (%p)...\n", queuehandle);
+  printf("(C) Committing file queue (%p)...\n", qhandle);
 #endif
+
+  PSP_FILE_CALLBACK msghandler;
 
   if (g_jobj!=NULL)
   {
@@ -386,10 +387,7 @@ JNIEXPORT jboolean JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_Setup
     msghandler = SetupDefaultQueueCallback;
   }
 
-  result = SetupCommitFileQueue(NULL,
-      (HSPFILEQ)queuehandle,
-      (PSP_FILE_CALLBACK)msghandler,
-      (PVOID)lpCallbackContext);
+  BOOL result = SetupCommitFileQueue(NULL, qhandle, msghandler, lpCallbackContext);
 
   if(!result)
   {
