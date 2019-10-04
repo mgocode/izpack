@@ -9,8 +9,7 @@
 jobject g_jobj = NULL;
 JavaVM *g_jvm;
 
-
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 BOOL g_debug_console = false;
