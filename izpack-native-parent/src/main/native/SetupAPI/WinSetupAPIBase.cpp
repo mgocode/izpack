@@ -47,9 +47,12 @@ void init_debug_console()
 UINT WINAPI MyQueueCallbackJava (
     PVOID pDefaultContext,
     UINT Notification,
-    UINT Param1,
-    UINT Param2)
+    UINT_PTR Param1,
+    UINT_PTR Param2)
 {
+#ifdef DEBUG
+	printf("(C) MyQueueCallbackJava...\n");
+#endif
 
   JNIEnv *lpEnv;
 
