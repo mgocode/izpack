@@ -9,6 +9,39 @@
 jobject g_jobj = NULL;
 JavaVM *g_jvm;
 
+
+#define DEBUG
+
+#ifdef DEBUG
+BOOL g_debug_console = false;
+void init_debug_console()
+{
+	if (!g_debug_console) {
+		AllocConsole();
+		freopen("CONIN$", "r", stdin);
+		freopen("CONOUT$", "w", stdout);
+		freopen("CONOUT$", "w", stderr);
+		printf("(C) WinSetupAPI: HELLO WORLD\n");
+		g_debug_console = true;
+#ifdef _WIN32
+		printf("_WIN32: true\n");
+#else
+		printf("_WIN32: not defined\n");
+#endif
+#ifdef _WIN64
+		printf("_WIN64: true\n");
+#else
+		printf("_WIN64: not defined\n");
+#endif
+		printf("sizeof(size_t): %d\n", sizeof(size_t));
+		printf("sizeof(HSPFILEQ): %d\n", sizeof(HSPFILEQ));
+		printf("sizeof(jint): %d\n", sizeof(jint));
+		printf("sizeof(jlong): %d\n", sizeof(jlong));
+	}
+}
+#endif
+
+
 // ----------------------------- Helper functions ----------------------------
 
 UINT WINAPI MyQueueCallbackJava (
@@ -196,6 +229,7 @@ JNIEXPORT jlong JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_SetupOpe
   env->GetJavaVM(&g_jvm);
 
 #ifdef DEBUG
+  init_debug_console();
   printf("(C) Opening new file queue...\n");
 #endif
   FileQueue = SetupOpenFileQueue();
@@ -336,7 +370,7 @@ JNIEXPORT jboolean JNICALL Java_com_izforge_izpack_util_os_WinSetupAPIBase_Setup
   lpCallbackContext = SetupInitDefaultQueueCallback( NULL );
 
 #ifdef DEBUG
-  printf("(C) Comitting file queue (%p)...\n", queuehandle);
+  printf("(C) Committing file queue (%p)...\n", queuehandle);
 #endif
 
   if (g_jobj!=NULL)
