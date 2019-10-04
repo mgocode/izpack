@@ -101,76 +101,56 @@ UINT MyQueueCallback_RenameError(PVOID pDefaultContext, UINT_PTR Param1, UINT_PT
 
 UINT MyQueueCallback_NeedMedia(PVOID pDefaultContext, UINT_PTR Param1, UINT_PTR Param2)
 {
-	JNIEnv* lpEnv;
-
-	jclass cls;
-	jmethodID jmID;
-	jstring js1, js2, js3, js4;
-	UINT ret;
-	INT lzRet = LZERROR_BADINHANDLE;
-
-	// Attach thread to JVM
-	g_jvm->AttachCurrentThread((void**)&lpEnv, NULL);
-
-	cls = lpEnv->GetObjectClass(g_jobj);
-
-	//case SPFILENOTIFY_NEEDMEDIA:
-	OFSTRUCT ReOpenBuf;
-
 #ifdef DEBUG
 	printf("(C) SPFILENOTIFY_NEEDMEDIA callback...\n");
 #endif
-	Param2 = (UINT)LocalAlloc(LMEM_ZEROINIT,
-		(strlen(((PSOURCE_MEDIA)Param1)->SourcePath)
-			+ strlen(((PSOURCE_MEDIA)Param1)->SourceFile)
-			+ 2) * sizeof(TCHAR));
 
-	lstrcpy((LPTSTR)Param2, ((PSOURCE_MEDIA)Param1)->SourcePath);
-	lstrcat((LPTSTR)Param2, "\\");
-	lstrcat((LPTSTR)Param2, ((PSOURCE_MEDIA)Param1)->SourceFile);
+	UINT ret;
+	PSOURCE_MEDIA psm = (PSOURCE_MEDIA)Param1;
+
+	LPTSTR path_str = (LPTSTR) LocalAlloc(LMEM_ZEROINIT,
+		(strlen(psm->SourcePath) + strlen(psm->SourceFile)+ 2) * sizeof(TCHAR));
+	lstrcpy(path_str, psm->SourcePath);
+	lstrcat(path_str, "\\");
+	lstrcat(path_str, psm->SourceFile);
 
 #ifdef DEBUG
-	printf("(C) SPFILENOTIFY_NEEDMEDIA: Checking for source file %s\n", (LPTSTR)Param2);
+	printf("(C) SPFILENOTIFY_NEEDMEDIA: Checking for source file %s\n", path_str);
 #endif
 
-	lzRet = LZOpenFile(
-		(LPTSTR)Param2,
-		&ReOpenBuf,
-		OF_EXIST | OF_READ
-	);
+	OFSTRUCT ReOpenBuf = {};
+	INT lzRet = LZOpenFile(path_str, &ReOpenBuf, OF_EXIST | OF_READ);
 
 	if ((lzRet != LZERROR_BADINHANDLE) && (lzRet != LZERROR_GLOBALLOC))
 	{
 #ifdef DEBUG
-		printf("(C) SPFILENOTIFY_NEEDMEDIA: Found %s\n", Param2);
+		printf("(C) SPFILENOTIFY_NEEDMEDIA: Found %s\n", path_str);
 #endif
-		//ret = FILEOP_SKIP;
 		ret = SetupDefaultQueueCallback(pDefaultContext, SPFILENOTIFY_NEEDMEDIA, Param1, Param2);
 	}
 	else
 	{
 #ifdef DEBUG
 		ErrorPrint("LZOpenFile");
+		printf("(C) SPFILENOTIFY_NEEDMEDIA: callback to Java (%s)...\n", psm->SourceFile);
 #endif
+		// Attach thread to JVM
+		JNIEnv* lpEnv;
+		g_jvm->AttachCurrentThread((void**)&lpEnv, NULL);
 
-#ifdef DEBUG
-		printf("(C) SPFILENOTIFY_NEEDMEDIA: callback to Java (%s)...\n",
-			((PSOURCE_MEDIA)Param1)->SourceFile);
-#endif
-
-		jmID = lpEnv->GetMethodID(cls,
-			"handleNeedMedia",
+		jclass cls = lpEnv->GetObjectClass(g_jobj);
+		jmethodID jmID = lpEnv->GetMethodID(cls, "handleNeedMedia",
 			"(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I");
 
-		js1 = ((PSOURCE_MEDIA)Param1)->Tagfile == NULL ? NULL : lpEnv->NewStringUTF(((PSOURCE_MEDIA)Param1)->Tagfile);
-		js2 = ((PSOURCE_MEDIA)Param1)->Description == NULL ? NULL : lpEnv->NewStringUTF(((PSOURCE_MEDIA)Param1)->Description);
-		js3 = ((PSOURCE_MEDIA)Param1)->SourcePath == NULL ? NULL : lpEnv->NewStringUTF(((PSOURCE_MEDIA)Param1)->SourcePath);
-		js4 = ((PSOURCE_MEDIA)Param1)->SourceFile == NULL ? NULL : lpEnv->NewStringUTF(((PSOURCE_MEDIA)Param1)->SourceFile);
+		jstring js1 = psm->Tagfile == NULL ? NULL : lpEnv->NewStringUTF(psm->Tagfile);
+		jstring js2 = psm->Description == NULL ? NULL : lpEnv->NewStringUTF(psm->Description);
+		jstring js3 = psm->SourcePath == NULL ? NULL : lpEnv->NewStringUTF(psm->SourcePath);
+		jstring js4 = psm->SourceFile == NULL ? NULL : lpEnv->NewStringUTF(psm->SourceFile);
 
 		ret = lpEnv->CallIntMethod(g_jobj, jmID, js1, js2, js3, js4);
 	}
 
-	LocalFree((LPVOID)Param2);
+	LocalFree(path_str);
 	return ret;
 }
 
