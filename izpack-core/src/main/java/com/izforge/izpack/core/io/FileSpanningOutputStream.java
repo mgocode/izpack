@@ -395,7 +395,7 @@ public class FileSpanningOutputStream extends OutputStream
             random.nextBytes(result);
             if (logger.isLoggable(Level.FINE))
             {
-                logger.fine("Created new magic number for SpanningOutputStream: " + formatMagic(magic));
+                logger.fine("Created new magic number for SpanningOutputStream: " + formatMagic(result));
             }
             return result;
         }
