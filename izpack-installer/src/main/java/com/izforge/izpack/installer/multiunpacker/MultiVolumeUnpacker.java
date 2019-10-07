@@ -224,7 +224,7 @@ public class MultiVolumeUnpacker extends UnpackerBase
                 if ("file".equals(uri.getScheme()))
                 {
                     File dir = new File(uri.getSchemeSpecificPart()).getAbsoluteFile();
-                    if (dir.getName().endsWith(".jar"))
+                    if (dir.getName().endsWith(".jar") || dir.getName().endsWith(".exe"))
                     {
                         dir = dir.getParentFile();
                     }
